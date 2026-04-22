@@ -1,0 +1,6 @@
+.env.migration
+*.log
+state/
+dumps/
+tmp/
+.DS_Store

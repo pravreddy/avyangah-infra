@@ -1,0 +1,11 @@
+# Never commit the live config — contains IPs, paths, and operational state
+.env.migration
+
+# Runtime artefacts
+*.log
+state/
+dumps/
+tmp/
+
+# macOS noise
+.DS_Store
