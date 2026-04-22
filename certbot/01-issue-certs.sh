@@ -14,6 +14,7 @@ EMAIL="praveen.moj@gmail.com"   # ← CHANGE to your real email (LE sends expiry
 # ─────────────────
 
 CAREAI_DIR="/home/deploy/careai"
+SSL_DIR="/mnt/nvme_data/ssl"   # actual cert location — bind-mounted into nginx container at /etc/nginx/ssl/
 WEBROOT="/var/www/certbot"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -52,19 +53,20 @@ certbot certonly \
   -d www.signsimple.co.uk
 
 echo
-echo "=== Copying certs into ~/careai/ssl/ ==="
+echo "=== Copying certs into ${SSL_DIR}/ ==="
+echo "  (this is the directory bind-mounted into careai-nginx as /etc/nginx/ssl/)"
 
 # Care AI uses: fullchain.pem + privkey.pem
-cp -L /etc/letsencrypt/live/careaisoftware.co.uk/fullchain.pem "${CAREAI_DIR}/ssl/fullchain.pem"
-cp -L /etc/letsencrypt/live/careaisoftware.co.uk/privkey.pem   "${CAREAI_DIR}/ssl/privkey.pem"
+cp -L /etc/letsencrypt/live/careaisoftware.co.uk/fullchain.pem "${SSL_DIR}/fullchain.pem"
+cp -L /etc/letsencrypt/live/careaisoftware.co.uk/privkey.pem   "${SSL_DIR}/privkey.pem"
 
 # SignSimple uses: docsign-fullchain.pem + docsign-privkey.pem
-cp -L /etc/letsencrypt/live/signsimple.co.uk/fullchain.pem     "${CAREAI_DIR}/ssl/docsign-fullchain.pem"
-cp -L /etc/letsencrypt/live/signsimple.co.uk/privkey.pem       "${CAREAI_DIR}/ssl/docsign-privkey.pem"
+cp -L /etc/letsencrypt/live/signsimple.co.uk/fullchain.pem     "${SSL_DIR}/docsign-fullchain.pem"
+cp -L /etc/letsencrypt/live/signsimple.co.uk/privkey.pem       "${SSL_DIR}/docsign-privkey.pem"
 
-chown -R deploy:deploy "${CAREAI_DIR}/ssl/"
-chmod 644 "${CAREAI_DIR}/ssl/"*fullchain.pem
-chmod 600 "${CAREAI_DIR}/ssl/"*privkey.pem
+chown -R deploy:deploy "${SSL_DIR}/"
+chmod 644 "${SSL_DIR}/"*fullchain.pem
+chmod 600 "${SSL_DIR}/"*privkey.pem
 
 echo
 echo "=== Installing renew-hook.sh to auto-copy certs on future renewals ==="
@@ -81,7 +83,7 @@ echo
 echo "=== Final verification ==="
 for cert in fullchain.pem docsign-fullchain.pem; do
   echo "--- ${cert} ---"
-  openssl x509 -in "${CAREAI_DIR}/ssl/${cert}" -noout -subject -dates
+  openssl x509 -in "${SSL_DIR}/${cert}" -noout -subject -dates
   echo
 done
 

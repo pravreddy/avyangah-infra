@@ -12,10 +12,12 @@ Manages SSL certs for `signsimple.co.uk` and `careaisoftware.co.uk` running in a
 
 Your current setup uses two distinct certificates (not one SAN cert covering both):
 
-| Cert file on host | Covers |
-|---|---|
-| `~/careai/ssl/fullchain.pem` + `privkey.pem` | `careaisoftware.co.uk`, `www.careaisoftware.co.uk` |
-| `~/careai/ssl/docsign-fullchain.pem` + `docsign-privkey.pem` | `signsimple.co.uk`, `www.signsimple.co.uk` |
+| Cert file on host | Mounts into nginx as | Covers |
+|---|---|---|
+| `/mnt/nvme_data/ssl/fullchain.pem` + `privkey.pem` | `/etc/nginx/ssl/fullchain.pem` | `careaisoftware.co.uk` + `www` |
+| `/mnt/nvme_data/ssl/docsign-fullchain.pem` + `docsign-privkey.pem` | `/etc/nginx/ssl/docsign-fullchain.pem` | `signsimple.co.uk` + `www` |
+
+**Important**: Cert files live at **`/mnt/nvme_data/ssl/`** (the NVMe volume), NOT at `~/careai/ssl/`. The nginx container bind-mounts `/mnt/nvme_data/ssl/` into itself as `/etc/nginx/ssl/`. Our scripts write to `/mnt/nvme_data/ssl/` accordingly.
 
 ## Files
 
@@ -57,8 +59,8 @@ sudo ./test-renewal.sh      # verify auto-renewal works
 
 ```bash
 # Check expiry dates
-ssh hetzner-prod 'sudo openssl x509 -in ~/careai/ssl/fullchain.pem         -noout -dates'
-ssh hetzner-prod 'sudo openssl x509 -in ~/careai/ssl/docsign-fullchain.pem -noout -dates'
+ssh hetzner-prod 'sudo openssl x509 -in /mnt/nvme_data/ssl/fullchain.pem         -noout -dates'
+ssh hetzner-prod 'sudo openssl x509 -in /mnt/nvme_data/ssl/docsign-fullchain.pem -noout -dates'
 
 # Check timer status
 ssh hetzner-prod 'systemctl list-timers | grep certbot'

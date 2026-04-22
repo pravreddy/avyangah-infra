@@ -12,23 +12,26 @@
 
 set -euo pipefail
 
+# Careful: /etc/nginx/ssl/ inside the nginx container is bind-mounted from
+# /mnt/nvme_data/ssl/ on the host. We write there, not to ~/careai/ssl/.
 CAREAI_DIR="/home/deploy/careai"
+SSL_DIR="/mnt/nvme_data/ssl"
 
 # Figure out which cert just renewed
 case "${RENEWED_LINEAGE:-}" in
   */careaisoftware.co.uk)
     echo "[renew-hook] Care AI cert renewed → copying to fullchain.pem / privkey.pem"
-    cp -L "${RENEWED_LINEAGE}/fullchain.pem" "${CAREAI_DIR}/ssl/fullchain.pem"
-    cp -L "${RENEWED_LINEAGE}/privkey.pem"   "${CAREAI_DIR}/ssl/privkey.pem"
-    chmod 644 "${CAREAI_DIR}/ssl/fullchain.pem"
-    chmod 600 "${CAREAI_DIR}/ssl/privkey.pem"
+    cp -L "${RENEWED_LINEAGE}/fullchain.pem" "${SSL_DIR}/fullchain.pem"
+    cp -L "${RENEWED_LINEAGE}/privkey.pem"   "${SSL_DIR}/privkey.pem"
+    chmod 644 "${SSL_DIR}/fullchain.pem"
+    chmod 600 "${SSL_DIR}/privkey.pem"
     ;;
   */signsimple.co.uk)
     echo "[renew-hook] SignSimple cert renewed → copying to docsign-fullchain.pem / docsign-privkey.pem"
-    cp -L "${RENEWED_LINEAGE}/fullchain.pem" "${CAREAI_DIR}/ssl/docsign-fullchain.pem"
-    cp -L "${RENEWED_LINEAGE}/privkey.pem"   "${CAREAI_DIR}/ssl/docsign-privkey.pem"
-    chmod 644 "${CAREAI_DIR}/ssl/docsign-fullchain.pem"
-    chmod 600 "${CAREAI_DIR}/ssl/docsign-privkey.pem"
+    cp -L "${RENEWED_LINEAGE}/fullchain.pem" "${SSL_DIR}/docsign-fullchain.pem"
+    cp -L "${RENEWED_LINEAGE}/privkey.pem"   "${SSL_DIR}/docsign-privkey.pem"
+    chmod 644 "${SSL_DIR}/docsign-fullchain.pem"
+    chmod 600 "${SSL_DIR}/docsign-privkey.pem"
     ;;
   *)
     echo "[renew-hook] Unknown lineage: ${RENEWED_LINEAGE:-<unset>} — skipping"
@@ -36,7 +39,7 @@ case "${RENEWED_LINEAGE:-}" in
     ;;
 esac
 
-chown -R deploy:deploy "${CAREAI_DIR}/ssl/"
+chown -R deploy:deploy "${SSL_DIR}/"
 
 # Graceful nginx reload — no dropped connections
 if docker exec careai-nginx nginx -s reload 2>&1; then
